@@ -10,8 +10,8 @@ type MoviesResponseItem = {
     release_date: string,
 };
 
-export async function fetchMoviesRequest (): Promise<Movie[]> {
-    const response = await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}`);
+export async function fetchMoviesRequest (page: number): Promise<Movie[]> {
+    const response = await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}&page=${page}`);
     const data = await response.json();
 
     if (response.status !== 200) {
