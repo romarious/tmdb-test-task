@@ -1,43 +1,81 @@
-import { createEntityAdapter, createSlice, EntityState } from "@reduxjs/toolkit";
-import { Movie } from './Movie';
+import { ActionReducerMapBuilder, createAsyncThunk, createEntityAdapter, createSlice, EntityState } from "@reduxjs/toolkit";
 
-const initialState: EntityState<Movie> = {
-    ids: ['1st', '2nd'],
-    entities: {
-        '1st': {
-            id: '1st',
-            image: 'https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg',
-            title: 'Movie 1',
-            rating: 8.7,
-            year: 2020
-        },
-        '2nd': {
-            id: '2nd',
-            image: 'https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg',
-            title: 'Movie 2',
-            rating: 7.3,
-            year: 2015
-        },
-    }
+const API_KEY = process.env.REACT_APP_API_KEY;
+
+type Movie = {
+    id: string,
+    image: string,
+    title: string,
+    rating: number,
+    year: number
 };
+
+type MoviesResponseItem = {
+    id: string,
+    backdrop_path: string,
+    title: string,
+    vote_average: string,
+    release_date: string,
+};
+
+export enum MoviesLoadingStatus {
+    IDLE,
+    LOADING,
+    SUCCEEDED,
+    FAILED
+}
+
+type MovieState = {
+    data: EntityState<Movie>,
+    status: MoviesLoadingStatus,
+    error: string | null
+}
+
+export type { Movie };
 
 const moviesAdapter = createEntityAdapter<Movie>({
     selectId: (movie) => movie.id,
     // sortComparer: (a, b) => a.rating - b.rating,
 });
 
+const initialState: MovieState = {
+    data: moviesAdapter.getInitialState(),
+    status: MoviesLoadingStatus.IDLE,
+    error: null
+};
+
+export const fetchMovies = createAsyncThunk('movies/fetchMovies', async (): Promise<Movie[]> => {
+    const response = await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}`);
+    if (response.status !== 200) {
+        throw new Error(`Failed to load movies, because of [${response.status}] ${await response.text()}`);
+    }
+
+    const data = await response.json();
+    return data.results.map((item: MoviesResponseItem) => ({
+        id: item.id,
+        image: `https://image.tmdb.org/t/p/w300/${item.backdrop_path}`,
+        title: item.title,
+        rating: item.vote_average,
+        year: item.release_date.substr(0, 4)
+    }));
+});
+
 const moviesSlice = createSlice({
     name: 'movies',
-    initialState: initialState, // moviesAdapter.getInitialState(),
-    reducers: {
-        // moviesReceived(state, action) {
-        //     // Or, call them as "mutating" helpers in a case reducer
-        //     moviesAdapter.setAll(state, action.payload.movies)
-        // },
-    },
+    initialState: initialState,
+    reducers: {},
+    extraReducers: (builder: ActionReducerMapBuilder<MovieState>) => {
+        builder.addCase(fetchMovies.pending, (state: MovieState, action) => {
+            state.status = MoviesLoadingStatus.LOADING;
+        });
+        builder.addCase(fetchMovies.fulfilled, (state: MovieState, action) => {
+            moviesAdapter.addMany(state.data, action.payload);
+            state.status = MoviesLoadingStatus.SUCCEEDED;
+        });
+    }
 });
 
 export const moviesReducer = moviesSlice.reducer;
 
-const selectors = moviesAdapter.getSelectors((state: { movies: EntityState<Movie> }) => state.movies);
-export const selectMovies = selectors.selectAll;
+export const { selectAll: selectMovies } = moviesAdapter.getSelectors((state: { movies: MovieState }) => state.movies.data);
+export const selectMoviesLoadStatus = (state: { movies: MovieState }) => state.movies.status;
