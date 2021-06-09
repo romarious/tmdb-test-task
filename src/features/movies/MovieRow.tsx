@@ -1,6 +1,6 @@
 import { Box, Paper, Grid, makeStyles, Typography } from '@material-ui/core';
 import { FunctionComponent } from 'react';
-import { Movie } from './moviesSlice';
+import { Movie } from './Movie';
 
 type MovieRowProps = {
     data: Movie

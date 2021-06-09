@@ -1,22 +1,6 @@
 import { ActionReducerMapBuilder, createAsyncThunk, createEntityAdapter, createSlice, EntityState } from "@reduxjs/toolkit";
-
-const API_KEY = process.env.REACT_APP_API_KEY;
-
-type Movie = {
-    id: string,
-    image: string,
-    title: string,
-    rating: number,
-    year: number
-};
-
-type MoviesResponseItem = {
-    id: string,
-    backdrop_path: string,
-    title: string,
-    vote_average: string,
-    release_date: string,
-};
+import { Movie } from './Movie';
+import { fetchMoviesRequest } from './moviesApi';
 
 export enum MoviesLoadingStatus {
     IDLE,
@@ -31,8 +15,6 @@ type MovieState = {
     error: string | null
 }
 
-export type { Movie };
-
 const moviesAdapter = createEntityAdapter<Movie>({
     selectId: (movie) => movie.id,
     // sortComparer: (a, b) => a.rating - b.rating,
@@ -44,21 +26,7 @@ const initialState: MovieState = {
     error: null
 };
 
-export const fetchMovies = createAsyncThunk('movies/fetchMovies', async (): Promise<Movie[]> => {
-    const response = await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}`);
-    if (response.status !== 200) {
-        throw new Error(`Failed to load movies, because of [${response.status}] ${await response.text()}`);
-    }
-
-    const data = await response.json();
-    return data.results.map((item: MoviesResponseItem) => ({
-        id: item.id,
-        image: `https://image.tmdb.org/t/p/w300/${item.backdrop_path}`,
-        title: item.title,
-        rating: item.vote_average,
-        year: item.release_date.substr(0, 4)
-    }));
-});
+export const fetchMovies = createAsyncThunk('movies/fetchMovies', fetchMoviesRequest);
 
 const moviesSlice = createSlice({
     name: 'movies',
