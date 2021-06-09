@@ -40,10 +40,15 @@ const moviesSlice = createSlice({
             moviesAdapter.addMany(state.data, action.payload);
             state.status = MoviesLoadingStatus.SUCCEEDED;
         });
+        builder.addCase(fetchMovies.rejected, (state: MovieState, action) => {
+            state.error = action.error.message || 'Request failed';
+            state.status = MoviesLoadingStatus.FAILED;
+        });
     }
 });
 
 export const moviesReducer = moviesSlice.reducer;
 
 export const { selectAll: selectMovies } = moviesAdapter.getSelectors((state: { movies: MovieState }) => state.movies.data);
+export const selectMoviesLoadError = (state: { movies: MovieState }) => state.movies.error;
 export const selectMoviesLoadStatus = (state: { movies: MovieState }) => state.movies.status;

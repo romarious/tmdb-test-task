@@ -1,21 +1,15 @@
 import { FunctionComponent, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import { selectMovies, selectMoviesLoadStatus, fetchMovies, MoviesLoadingStatus } from './moviesSlice';
+import { selectMovies, selectMoviesLoadStatus, selectMoviesLoadError, fetchMovies, MoviesLoadingStatus } from './moviesSlice';
 import MovieRow from './MovieRow';
-import { Box, Grid, CircularProgress, makeStyles } from '@material-ui/core';
-
-const useStyles = makeStyles({
-    root: {
-        flexGrow: 1,
-        minHeight: '80vh'
-    }
-});
+import Loader from '../../common/components/Loader';
+import { Box, Typography } from '@material-ui/core';
 
 const MoviesList: FunctionComponent = () => {
-    const classes = useStyles();
     const dispatch = useAppDispatch();
     const movies   = useAppSelector(selectMovies);
     const moviesLoadStatus = useAppSelector(selectMoviesLoadStatus);
+    const moviesLoadError = useAppSelector(selectMoviesLoadError);
 
     useEffect(() => {
         if (moviesLoadStatus === MoviesLoadingStatus.IDLE) {
@@ -23,23 +17,21 @@ const MoviesList: FunctionComponent = () => {
         }
     }, [moviesLoadStatus, dispatch]);
 
-    const Loader = (
-        <Grid
-            className={classes.root}
-            container
-            direction="row"
-            justify="center"
-            alignItems="center"
-        >
-            <CircularProgress />
-        </Grid>
-    );
+    if (moviesLoadStatus === MoviesLoadingStatus.IDLE || moviesLoadStatus === MoviesLoadingStatus.LOADING) {
+        return <Loader />;
+    }
+
+    if (moviesLoadStatus === MoviesLoadingStatus.FAILED) {
+        return (
+            <Typography variant="h3" align="center" color="error">
+                { moviesLoadError || 'Something went wrong...'}
+            </Typography>
+        );
+    }
 
     return (
         <Box>{
-            moviesLoadStatus === MoviesLoadingStatus.SUCCEEDED
-            ? movies.map(movie => <MovieRow key={movie.id} data={movie} />)
-            : Loader
+            movies.map(movie => <MovieRow key={movie.id} data={movie} />)
         }</Box>
     );
 };
