@@ -21,7 +21,7 @@ export async function fetchMoviesRequest (page: number): Promise<Movie[]> {
 
     if (!randomErrorOccurred && Math.random() > 0.5) {
         randomErrorOccurred = true;
-        throw new Error('Error for demonstration purposes - retry loading pressing on the desired page number again');
+        throw new Error('Error for demonstration purposes - retry by pressing on the desired page number again');
     }
     randomErrorOccurred = false;
 
