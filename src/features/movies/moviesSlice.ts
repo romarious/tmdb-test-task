@@ -1,4 +1,5 @@
 import { ActionReducerMapBuilder, createAsyncThunk, createEntityAdapter, createSelector, createSlice, EntityState } from "@reduxjs/toolkit";
+import { AppThunk } from "../../app/store";
 import { Movie } from './Movie';
 import { fetchMoviesRequest } from './moviesApi';
 
@@ -41,12 +42,17 @@ const initialState: MovieState = {
     pages: {}
 };
 
-export const fetchMovies = createAsyncThunk(`${MOVIES_NS}/fetchMovies`, fetchMoviesRequest);
+const fetchMovies = createAsyncThunk(`${MOVIES_NS}/fetchMovies`, fetchMoviesRequest);
 
 const moviesSlice = createSlice({
     name: MOVIES_NS,
     initialState: initialState,
-    reducers: {},
+    reducers: {
+        setCurrentPage: (state, action) => {
+            state.currentPageIndex = action.payload;
+            state.requestedPage = null;
+        }
+    },
     extraReducers: (builder: ActionReducerMapBuilder<MovieState>) => {
         builder.addCase(fetchMovies.pending, (state: MovieState, action) => {
             const newPageIndex = action.meta.arg;
@@ -77,6 +83,29 @@ const moviesSlice = createSlice({
 });
 
 export const moviesReducer = moviesSlice.reducer;
+
+const moviesActions = moviesSlice.actions;
+
+export const requestMoviesPage = (page: number): AppThunk => (dispatch, getState) => {
+    const state = selectMoviesSubState(getState());
+    const nextPage = state.pages[page];
+
+    if (page === state.currentPageIndex && nextPage && nextPage.status === MoviesLoadingStatus.SUCCEEDED) {
+        return;
+    }
+
+    if (nextPage && nextPage.status === MoviesLoadingStatus.SUCCEEDED) {
+        dispatch(moviesActions.setCurrentPage(page));
+        return;
+    }
+
+    if (!nextPage || [MoviesLoadingStatus.IDLE, MoviesLoadingStatus.FAILED].includes(nextPage.status)) {
+        dispatch(fetchMovies(page));
+        return;
+    }
+
+    // Here we just wait for loading
+}
 
 const selectMoviesSubState = (globalState: { [MOVIES_NS]: MovieState }) => globalState[MOVIES_NS];
 const selectCurrentPageIndex = createSelector([selectMoviesSubState], (state: MovieState) => state.currentPageIndex);

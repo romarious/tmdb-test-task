@@ -1,6 +1,6 @@
 import { ChangeEvent, FunctionComponent, useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import { movieSelectors, fetchMovies, MoviesLoadingStatus, DEFAULT_PAGE } from './moviesSlice';
+import { movieSelectors, requestMoviesPage, MoviesLoadingStatus, DEFAULT_PAGE } from './moviesSlice';
 import MovieRow from './MovieRow';
 import { Box, Snackbar } from '@material-ui/core';
 import CustomPagination from '../../common/components/CustomPagination';
@@ -17,12 +17,12 @@ const MoviesList: FunctionComponent = () => {
 
     useEffect(() => {
         if (currentPageStatus === MoviesLoadingStatus.IDLE) {
-            dispatch(fetchMovies(currentPage));
+            dispatch(requestMoviesPage(currentPage));
         }
     }, [currentPageStatus, currentPage, dispatch]);
 
     const handlePaginationChange = (event: ChangeEvent<unknown>, page: number) => {
-        dispatch(fetchMovies(page))
+        dispatch(requestMoviesPage(page))
     };
 
     const [showErrorAlert, setShowErrorAlert] = useState(false);
