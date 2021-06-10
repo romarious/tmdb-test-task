@@ -1,4 +1,4 @@
-import { Box, Paper, Grid, makeStyles, Typography } from '@material-ui/core';
+import { Box, Paper, Grid, makeStyles, Typography, Link } from '@material-ui/core';
 import { FunctionComponent } from 'react';
 import { Movie } from './Movie';
 
@@ -11,17 +11,16 @@ const useStyles = makeStyles({
         flexGrow: 1
     },
     title: {
-        fontSize: '3vw'
+        fontSize: '2.5vw'
+    },
+    overview: {
+        fontSize: '1.5vw'
     },
     textSecondary: {
-        fontSize: '2vw'
+        fontSize: '1vw'
     },
-    thumbnail: {
-        height: '10vw',
-        backgroundImage: (data: Movie) => `url(${data.image})`,
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
-        backgroundSize: 'cover',
+    poster: {
+        width: '100%'
     }
 });
 
@@ -31,13 +30,20 @@ const MovieRow: FunctionComponent<MovieRowProps> = ({ data }) => {
     return (
         <Box marginY={2}>
             <Grid className={classes.root} container spacing={2} component={Paper} alignItems="stretch">
-                <Grid item xs={3}>
-                    <Paper className={classes.thumbnail} square variant="outlined"/>
+                <Grid item xs={2}>
+                    <img src={data.image} alt="" className={classes.poster} />
                 </Grid>
-                <Grid item xs={9} container direction="column" justify="space-between">
+                <Grid item xs={10} container direction="column" justify="space-between">
                     <Grid item>
-                        <Typography variant="body2" className={classes.title}>
-                            {data.title}
+                        <Link href={`https://www.themoviedb.org/movie/${data.id}`} target="_blank" rel="noreferrer">
+                            <Typography variant="body2" className={classes.title}>
+                                {data.title}
+                            </Typography>
+                        </Link>
+                    </Grid>
+                    <Grid item>
+                        <Typography variant="body2" className={classes.overview}>
+                            {data.overview}
                         </Typography>
                     </Grid>
                     <Grid item container direction="row" justify="space-between">

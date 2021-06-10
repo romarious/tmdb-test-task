@@ -4,10 +4,11 @@ const API_KEY = process.env.REACT_APP_API_KEY;
 
 type MoviesResponseItem = {
     id: string,
-    backdrop_path: string,
+    poster_path: string,
     title: string,
     vote_average: string,
     release_date: string,
+    overview: string,
 };
 
 const delay = (duration: number = 1000) => new Promise(resolve => setTimeout(resolve, duration));
@@ -28,8 +29,9 @@ export async function fetchMoviesRequest (page: number): Promise<Movie[]> {
 
     return data.results.map((item: MoviesResponseItem) => ({
         id: item.id,
-        image: `https://image.tmdb.org/t/p/w300/${item.backdrop_path}`,
+        image: `https://image.tmdb.org/t/p/w300/${item.poster_path}`,
         title: item.title,
+        overview: item.overview,
         rating: item.vote_average,
         year: item.release_date.substr(0, 4)
     }));
