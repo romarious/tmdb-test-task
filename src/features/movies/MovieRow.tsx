@@ -10,6 +10,12 @@ const useStyles = makeStyles({
     root: {
         flexGrow: 1
     },
+    title: {
+        fontSize: '3vw'
+    },
+    textSecondary: {
+        fontSize: '2vw'
+    },
     thumbnail: {
         height: '10vw',
         backgroundImage: (data: Movie) => `url(${data.image})`,
@@ -30,18 +36,18 @@ const MovieRow: FunctionComponent<MovieRowProps> = ({ data }) => {
                 </Grid>
                 <Grid item xs={9} container direction="column" justify="space-between">
                     <Grid item>
-                        <Typography variant="body2">
+                        <Typography variant="body2" className={classes.title}>
                             {data.title}
                         </Typography>
                     </Grid>
                     <Grid item container direction="row" justify="space-between">
                         <Grid item>
-                            <Typography variant="body2" color="textSecondary">
+                            <Typography variant="body2" className={classes.textSecondary} color="textSecondary">
                                 Year: {data.year}
                             </Typography>
                         </Grid>
                         <Grid item>
-                            <Typography variant="body2" color="textSecondary" align="right">
+                            <Typography variant="body2" className={classes.textSecondary} color="textSecondary" align="right">
                                 Rating: {data.rating}
                             </Typography>
                         </Grid>
