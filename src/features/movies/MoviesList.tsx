@@ -9,7 +9,7 @@ import { Alert } from '@material-ui/lab';
 const MoviesList: FunctionComponent = () => {
     const dispatch = useAppDispatch();
     const currentPage = useAppSelector(movieSelectors.selectCurrentPageIndex);
-    const movies   = useAppSelector(movieSelectors.selectMovies);
+    const movieIds = useAppSelector(movieSelectors.selectMovieIds);
     const currentPageStatus = useAppSelector(movieSelectors.selectCurrentPageStatus);
     const requestedPage = useAppSelector(movieSelectors.selectRequestedPageIndex);
     const requestedPageStatus = useAppSelector(movieSelectors.selectRequestedPageStatus);
@@ -69,7 +69,7 @@ const MoviesList: FunctionComponent = () => {
                 (currentPageStatus === MoviesLoadingStatus.SUCCEEDED) &&
                     <>
                         <Box>{
-                            movies.map(movie => <MovieRow key={movie.id} data={movie} />)
+                            movieIds.map(id => <MovieRow key={id} movieId={id} />)
                         }</Box>
                         pagination
                     </>

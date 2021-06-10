@@ -1,10 +1,11 @@
-import { ActionReducerMapBuilder, createAsyncThunk, createEntityAdapter, createSelector, createSlice, EntityState } from "@reduxjs/toolkit";
-import { AppThunk } from "../../app/store";
+import { ActionReducerMapBuilder, createAsyncThunk, createEntityAdapter, createSelector, createSlice, EntityId, EntityState } from "@reduxjs/toolkit";
+import { AppThunk, RootState } from "../../app/store";
 import { Movie } from './Movie';
 import { fetchMoviesRequest } from './moviesApi';
 
 export const MOVIES_NS = 'movies';
 export const DEFAULT_PAGE = 1;
+const FAVORIES_LOCAL_STORAGE_KEY = 'top500_favorites';
 
 export enum MoviesLoadingStatus {
     IDLE,
@@ -22,7 +23,8 @@ type MoviePage = {
 type MovieState = {
     currentPageIndex: number,
     requestedPage: number | null,
-    pages: Record<number, MoviePage>
+    pages: Record<number, MoviePage>,
+    favorites: EntityId[]
 }
 
 const moviesAdapter = createEntityAdapter<Movie>({
@@ -36,10 +38,27 @@ const createPage = (status: MoviesLoadingStatus = MoviesLoadingStatus.IDLE) => (
     error: null
 });
 
+const readFavorites = () => {
+    const stored = String(localStorage.getItem(FAVORIES_LOCAL_STORAGE_KEY));
+    let parsed;
+    try {
+        parsed = JSON.parse(stored);
+    } catch (e) {
+        // just ignore any pare errors
+    }
+
+    if (Array.isArray(parsed) && parsed.every(item => typeof item === 'number')) {
+        return parsed;
+    }
+
+    return [];
+}
+
 const initialState: MovieState = {
     currentPageIndex: DEFAULT_PAGE,
     requestedPage: null,
-    pages: {}
+    pages: {},
+    favorites: readFavorites()
 };
 
 const fetchMovies = createAsyncThunk(`${MOVIES_NS}/fetchMovies`, fetchMoviesRequest);
@@ -48,10 +67,36 @@ const moviesSlice = createSlice({
     name: MOVIES_NS,
     initialState: initialState,
     reducers: {
-        setCurrentPage: (state, action) => {
+        setFavorite (state, action) {
+            const flag = action.payload.flag;
+            const id = action.payload.id;
+            const presented = state.favorites.includes(id);
+
+            if (flag) {
+                if (presented) return state;
+
+                state.favorites.push(id);
+            } else {
+                if (!presented) return state;
+
+                const index = state.favorites.findIndex(item => item === id);
+                state.favorites.splice(index, 1);
+            }
+
+            let serialized;
+            try {
+                serialized = JSON.stringify(state.favorites);
+            } catch (e) {
+                serialized = '[]';
+                state.favorites = [];
+            }
+
+            localStorage.setItem(FAVORIES_LOCAL_STORAGE_KEY, serialized);
+        },
+        setCurrentPage (state, action) {
             state.currentPageIndex = action.payload;
             state.requestedPage = null;
-        }
+        },
     },
     extraReducers: (builder: ActionReducerMapBuilder<MovieState>) => {
         builder.addCase(fetchMovies.pending, (state: MovieState, action) => {
@@ -84,7 +129,7 @@ const moviesSlice = createSlice({
 
 export const moviesReducer = moviesSlice.reducer;
 
-const moviesActions = moviesSlice.actions;
+export const moviesActions = moviesSlice.actions;
 
 export const requestMoviesPage = (page: number): AppThunk => (dispatch, getState) => {
     const state = selectMoviesSubState(getState());
@@ -107,7 +152,8 @@ export const requestMoviesPage = (page: number): AppThunk => (dispatch, getState
     // Here we just wait for loading
 }
 
-const selectMoviesSubState = (globalState: { [MOVIES_NS]: MovieState }) => globalState[MOVIES_NS];
+const selectMoviesSubState = (rootState: RootState) => rootState[MOVIES_NS];
+const selectFavorites = createSelector([selectMoviesSubState], (state: MovieState) => state.favorites);
 const selectCurrentPageIndex = createSelector([selectMoviesSubState], (state: MovieState) => state.currentPageIndex);
 const selectRequestedPageIndex = createSelector([selectMoviesSubState], (state: MovieState) => state.requestedPage);
 const selectCurrentPage = createSelector([selectMoviesSubState, selectCurrentPageIndex], (state: MovieState, pageIndex) => state.pages[pageIndex] || createPage());
@@ -117,13 +163,20 @@ const selectRequestedPageStatus = createSelector([selectRequestedPage], (page: M
 const selectRequestedPageError = createSelector([selectRequestedPage], (page: MoviePage) => page.status === MoviesLoadingStatus.FAILED ? page.error : null);
 const selectMoviesData = createSelector([selectCurrentPage], (page: MoviePage) => page.status === MoviesLoadingStatus.SUCCEEDED ? page.data : moviesAdapter.getInitialState());
 
-const { selectAll: selectMovies } = moviesAdapter.getSelectors(selectMoviesData);
+const {
+    selectIds: selectMovieIds,
+    selectById: selectMovieById,
+} = moviesAdapter.getSelectors(selectMoviesData);
+
+const selectMovieFavoriteFlag = createSelector([selectFavorites, (state: RootState, id: EntityId) => id], (favorites: EntityId[], id: EntityId) => favorites.includes(id));
 
 export const movieSelectors = {
     selectCurrentPageIndex,
     selectCurrentPageStatus,
-    selectMovies,
+    selectMovieById,
+    selectMovieFavoriteFlag,
+    selectMovieIds,
     selectRequestedPageError,
     selectRequestedPageIndex,
-    selectRequestedPageStatus
+    selectRequestedPageStatus,
 };
