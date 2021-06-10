@@ -19,8 +19,8 @@ type MoviePage = {
 }
 
 type MovieState = {
-    currentPage: number,
-    loadingPage: number | null,
+    currentPageIndex: number,
+    requestedPage: number | null,
     pages: Record<number, MoviePage>
 }
 
@@ -29,18 +29,16 @@ const moviesAdapter = createEntityAdapter<Movie>({
     // sortComparer: (a, b) => a.rating - b.rating,
 });
 
-const createPage = () => ({
+const createPage = (status: MoviesLoadingStatus = MoviesLoadingStatus.IDLE) => ({
     data: moviesAdapter.getInitialState(),
-    status: MoviesLoadingStatus.IDLE,
+    status,
     error: null
 });
 
 const initialState: MovieState = {
-    currentPage: DEFAULT_PAGE,
-    loadingPage: null,
-    pages: {
-        [DEFAULT_PAGE]: createPage()
-    }
+    currentPageIndex: DEFAULT_PAGE,
+    requestedPage: null,
+    pages: {}
 };
 
 export const fetchMovies = createAsyncThunk(`${MOVIES_NS}/fetchMovies`, fetchMoviesRequest);
@@ -51,27 +49,27 @@ const moviesSlice = createSlice({
     reducers: {},
     extraReducers: (builder: ActionReducerMapBuilder<MovieState>) => {
         builder.addCase(fetchMovies.pending, (state: MovieState, action) => {
-            const newPageNumber = action.meta.arg;
-            if (!state.pages[newPageNumber]) {
-                state.pages[newPageNumber] = createPage();
+            const newPageIndex = action.meta.arg;
+            if (!state.pages[newPageIndex]) {
+                state.pages[newPageIndex] = createPage(MoviesLoadingStatus.LOADING);
             }
-            const page = state.pages[newPageNumber];
+            const page = state.pages[newPageIndex];
             page.status = MoviesLoadingStatus.LOADING;
-            state.loadingPage = newPageNumber;
+            state.requestedPage = newPageIndex;
         });
         builder.addCase(fetchMovies.fulfilled, (state: MovieState, action) => {
-            const loadedPageNumber = action.meta.arg;
-            const page = state.pages[loadedPageNumber];
+            const loadedPageIndex = action.meta.arg;
+            const page = state.pages[loadedPageIndex];
 
             moviesAdapter.addMany(page.data, action.payload);
             page.status = MoviesLoadingStatus.SUCCEEDED;
-            if (state.loadingPage === loadedPageNumber) {
-                state.currentPage = loadedPageNumber;
+            if (state.requestedPage === loadedPageIndex) {
+                state.currentPageIndex = loadedPageIndex;
             }
         });
         builder.addCase(fetchMovies.rejected, (state: MovieState, action) => {
-            const loadedPageNumber = action.meta.arg;
-            const page = state.pages[loadedPageNumber];
+            const loadedPageIndex = action.meta.arg;
+            const page = state.pages[loadedPageIndex];
             page.error = action.error.message || 'Request failed';
             page.status = MoviesLoadingStatus.FAILED;
         });
@@ -81,19 +79,22 @@ const moviesSlice = createSlice({
 export const moviesReducer = moviesSlice.reducer;
 
 const selectMoviesSubState = (globalState: { [MOVIES_NS]: MovieState }) => globalState[MOVIES_NS];
-const selectCurrentPageNumber = createSelector([selectMoviesSubState], (state: MovieState) => state.currentPage);
-const selectLoadingPageNumber = createSelector([selectMoviesSubState], (state: MovieState) => state.loadingPage);
-const selectCurrentPage = createSelector([selectMoviesSubState, selectCurrentPageNumber], (state: MovieState, page) => state.pages[page]);
-const selectMoviesLoadStatus = createSelector([selectCurrentPage], (state: MoviePage) => state.status);
-const selectMoviesLoadError = createSelector([selectCurrentPage], (state: MoviePage) => state.error);
-const selectMoviesData = createSelector([selectCurrentPage], (state: MoviePage) => state.data);
+const selectCurrentPageIndex = createSelector([selectMoviesSubState], (state: MovieState) => state.currentPageIndex);
+const selectRequestedPageIndex = createSelector([selectMoviesSubState], (state: MovieState) => state.requestedPage);
+const selectCurrentPage = createSelector([selectMoviesSubState, selectCurrentPageIndex], (state: MovieState, pageIndex) => state.pages[pageIndex] || createPage());
+const selectRequestedPage = createSelector([selectMoviesSubState, selectRequestedPageIndex], (state: MovieState, pageIndex) => typeof pageIndex === 'number' && state.pages[pageIndex] || createPage());
+const selectCurrentPageStatus = createSelector([selectCurrentPage], (page: MoviePage) => page.status);
+const selectRequestedPageStatus = createSelector([selectRequestedPage], (page: MoviePage) => page.status);
+const selectRequestedPageError = createSelector([selectRequestedPage], (page: MoviePage) => page.status === MoviesLoadingStatus.FAILED ? page.error : null);
+const selectMoviesData = createSelector([selectCurrentPage], (page: MoviePage) => page.status === MoviesLoadingStatus.SUCCEEDED ? page.data : moviesAdapter.getInitialState());
 
 const { selectAll: selectMovies } = moviesAdapter.getSelectors(selectMoviesData);
 
 export const movieSelectors = {
-    selectCurrentPageNumber,
-    selectLoadingPageNumber,
+    selectCurrentPageIndex,
+    selectCurrentPageStatus,
     selectMovies,
-    selectMoviesLoadError,
-    selectMoviesLoadStatus,
+    selectRequestedPageError,
+    selectRequestedPageIndex,
+    selectRequestedPageStatus
 };

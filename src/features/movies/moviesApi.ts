@@ -10,7 +10,15 @@ type MoviesResponseItem = {
     release_date: string,
 };
 
+const delay = (duration: number = 1000) => new Promise(resolve => setTimeout(resolve, duration));
+
 export async function fetchMoviesRequest (page: number): Promise<Movie[]> {
+    await delay(500 + Math.random() * 2000); // for demonstration purposes
+
+    if (Math.random() > 0.6) {
+        throw new Error('Error for demonstration purposes - retry loading pressing on the desired page number again');
+    }
+
     const response = await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}&page=${page}`);
     const data = await response.json();
 

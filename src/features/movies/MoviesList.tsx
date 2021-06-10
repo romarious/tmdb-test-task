@@ -1,65 +1,78 @@
-import { ChangeEvent, FunctionComponent, useEffect } from 'react';
+import { ChangeEvent, FunctionComponent, useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { movieSelectors, fetchMovies, MoviesLoadingStatus, DEFAULT_PAGE } from './moviesSlice';
 import MovieRow from './MovieRow';
-import Loader from '../../common/components/Loader';
-import { Box, Typography } from '@material-ui/core';
-import Pagination from '@material-ui/lab/Pagination';
-import { makeStyles } from '@material-ui/styles';
-
-const useStyles = makeStyles({
-    pagination: {
-        margin: '0 auto',
-        width: 'fit-content'
-    }
-});
+import { Box, Snackbar } from '@material-ui/core';
+import CustomPagination from '../../common/components/CustomPagination';
+import { Alert } from '@material-ui/lab';
 
 const MoviesList: FunctionComponent = () => {
-    const classes = useStyles();
-
     const dispatch = useAppDispatch();
-    const currentPage = useAppSelector(movieSelectors.selectCurrentPageNumber);
+    const currentPage = useAppSelector(movieSelectors.selectCurrentPageIndex);
     const movies   = useAppSelector(movieSelectors.selectMovies);
-    const moviesLoadStatus = useAppSelector(movieSelectors.selectMoviesLoadStatus);
-    const moviesLoadError = useAppSelector(movieSelectors.selectMoviesLoadError);
+    const currentPageStatus = useAppSelector(movieSelectors.selectCurrentPageStatus);
+    const requestedPage = useAppSelector(movieSelectors.selectRequestedPageIndex);
+    const requestedPageStatus = useAppSelector(movieSelectors.selectRequestedPageStatus);
+    const requestedPageError = useAppSelector(movieSelectors.selectRequestedPageError);
 
     useEffect(() => {
-        if (moviesLoadStatus === MoviesLoadingStatus.IDLE) {
+        if (currentPageStatus === MoviesLoadingStatus.IDLE) {
             dispatch(fetchMovies(currentPage));
         }
-    }, [moviesLoadStatus, currentPage, dispatch]);
+    }, [currentPageStatus, currentPage, dispatch]);
 
     const handlePaginationChange = (event: ChangeEvent<unknown>, page: number) => {
         dispatch(fetchMovies(page))
     };
 
+    const [showErrorAlert, setShowErrorAlert] = useState(false);
+    const [errorAlertText, setErrorAlertText] = useState('Something went wrong...');
+
+    const handleCloseErrorAlert = (event: React.SyntheticEvent | React.MouseEvent, reason?: string) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+
+        setShowErrorAlert(false);
+    };
+
+    useEffect(() => {
+        if (requestedPageStatus === MoviesLoadingStatus.FAILED) {
+            // Store error from that page
+            setErrorAlertText(requestedPageError || 'Something went wrong...');
+            setShowErrorAlert(true);
+        }
+    }, [requestedPage, requestedPageStatus, requestedPageError]);
+
+    const isLoading = requestedPageStatus === MoviesLoadingStatus.LOADING;
+
+    const pagination = <CustomPagination
+        onChange={handlePaginationChange}
+        page={currentPage}
+        requestedPage={requestedPage}
+        loading={isLoading}
+        defaultPage={DEFAULT_PAGE}
+    />;
+
     return (
         <>
-            <Pagination
-                className={classes.pagination}
-                siblingCount={2}
-                boundaryCount={2}
-                count={25}
-                shape="rounded"
-                onChange={handlePaginationChange}
-                page={currentPage}
-                defaultPage={DEFAULT_PAGE}
-            />
+            { pagination }
             {
-                (moviesLoadStatus === MoviesLoadingStatus.IDLE || moviesLoadStatus === MoviesLoadingStatus.LOADING) &&
-                    <Loader />
+
+                <Snackbar open={showErrorAlert} autoHideDuration={6000} onClose={handleCloseErrorAlert}>
+                    <Alert onClose={handleCloseErrorAlert} severity="error">
+                        { errorAlertText }
+                    </Alert>
+                </Snackbar>
             }
             {
-                (moviesLoadStatus === MoviesLoadingStatus.FAILED) &&
-                    <Typography variant="h3" align="center" color="error">
-                        { moviesLoadError || 'Something went wrong...'}
-                    </Typography>
-            }
-            {
-                (moviesLoadStatus === MoviesLoadingStatus.SUCCEEDED) &&
-                    <Box>{
-                        movies.map(movie => <MovieRow key={movie.id} data={movie} />)
-                    }</Box>
+                (currentPageStatus === MoviesLoadingStatus.SUCCEEDED) &&
+                    <>
+                        <Box>{
+                            movies.map(movie => <MovieRow key={movie.id} data={movie} />)
+                        }</Box>
+                        pagination
+                    </>
             }
         </>
     );
