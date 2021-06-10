@@ -71,7 +71,7 @@ const MoviesList: FunctionComponent = () => {
                         <Box>{
                             movieIds.map(id => <MovieRow key={id} movieId={id} />)
                         }</Box>
-                        pagination
+                        { pagination }
                     </>
             }
         </>
