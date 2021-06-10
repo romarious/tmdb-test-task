@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.js": "/tmdb-test-task/static/js/main.df257c66.chunk.js",
+    "main.js.map": "/tmdb-test-task/static/js/main.df257c66.chunk.js.map",
+    "runtime-main.js": "/tmdb-test-task/static/js/runtime-main.4fcc0b0f.js",
+    "runtime-main.js.map": "/tmdb-test-task/static/js/runtime-main.4fcc0b0f.js.map",
+    "static/js/2.a8e67f85.chunk.js": "/tmdb-test-task/static/js/2.a8e67f85.chunk.js",
+    "static/js/2.a8e67f85.chunk.js.map": "/tmdb-test-task/static/js/2.a8e67f85.chunk.js.map",
+    "index.html": "/tmdb-test-task/index.html",
+    "static/js/2.a8e67f85.chunk.js.LICENSE.txt": "/tmdb-test-task/static/js/2.a8e67f85.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.4fcc0b0f.js",
+    "static/js/2.a8e67f85.chunk.js",
+    "static/js/main.df257c66.chunk.js"
+  ]
+}
