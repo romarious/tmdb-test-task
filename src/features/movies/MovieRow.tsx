@@ -53,8 +53,8 @@ const MovieRow: FunctionComponent<MovieRowProps> = ({ movieId }) => {
                 <Grid item xs={10} container direction="column" justify="space-between">
                     <Grid item className={classes.head}>
                         <Box>
-                            <Link className={classes.title} href={`https://www.themoviedb.org/movie/${movieData.id}`} target="_blank" rel="noreferrer">
-                                <Typography variant="body2" component="span">
+                            <Link href={`https://www.themoviedb.org/movie/${movieData.id}`} target="_blank" rel="noreferrer">
+                                <Typography className={classes.title} variant="body2" component="span">
                                     {movieData.title}
                                 </Typography>
                             </Link>
